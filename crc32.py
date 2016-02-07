@@ -47,9 +47,9 @@ def get_input():
         return tuple(map(ord, f.read()))
 
 
-def out(str):
+def out(msg):
     if not testing:  # pragma: no cover
-        args.outfile.write(str)
+        args.outfile.write(msg)
         args.outfile.write(os.linesep)
 
 table = []
@@ -93,34 +93,34 @@ def init_tables(poly, reverse=True):
                 rangess(found_none)))
 
 
-def calc(bytes, accum=0):
+def calc(data, accum=0):
     accum = ~accum
-    for b in bytes:
+    for b in data:
         accum = table[(accum ^ b) & 0xFF] ^ ((accum >> 8) & 0x00FFFFFF)
     accum = ~accum
     return accum & 0xFFFFFFFF
 
 
-def rewind(accum, bytes):
-    if not bytes:
+def rewind(accum, data):
+    if not data:
         return (accum,)
-    stack = [(len(bytes), ~accum)]
-    solutions = []
+    stack = [(len(data), ~accum)]
+    solutions = set()
     while stack:
         node = stack.pop()
         prev_offset = node[0] - 1
         for i in table_reverse[(node[1] >> 24) & 0xFF]:
             prevCRC = (((node[1] ^ table[i]) << 8) |
-                       (i ^ bytes[prev_offset])) & 0xFFFFFFFF
+                       (i ^ data[prev_offset])) & 0xFFFFFFFF
             if prev_offset:
                 stack.append((prev_offset, prevCRC))
             else:
-                solutions.append((~prevCRC) & 0xFFFFFFFF)
-    return set(solutions)  # eliminate duplicates
+                solutions.add((~prevCRC) & 0xFFFFFFFF)
+    return solutions
 
 
 def findReverse(desired, accum):
-    solutions = []
+    solutions = set()
     accum = ~accum
     stack = [(~desired,)]
     while stack:
@@ -128,16 +128,16 @@ def findReverse(desired, accum):
         for j in table_reverse[(node[0] >> 24) & 0xFF]:
             if len(node) == 4:
                 a = accum
-                bytes = []
+                data = []
                 node = node[1:] + (j,)
                 for i in range(3, -1, -1):
-                    bytes.append((a ^ node[i]) & 0xFF)
+                    data.append((a ^ node[i]) & 0xFF)
                     a >>= 8
                     a ^= table[node[i]]
-                solutions.append(tuple(bytes))
+                solutions.add(tuple(data))
             else:
                 stack.append(((node[0] ^ table[j]) << 8,) + node[1:] + (j,))
-    return set(solutions)
+    return solutions
 
 # Tools
 
@@ -161,8 +161,6 @@ if hasattr(int, "bit_length"):
     def bit_length(num):
         return num.bit_length()
 else:
-    import math
-
     def bit_length(n):
         if n == 0:
             return 0
@@ -203,9 +201,9 @@ import itertools
 
 
 def ranges(i):
-    for a, b in itertools.groupby(enumerate(i), lambda x: x[1] - x[0]):
-        b = list(b)
-        yield b[0][1], b[-1][1]
+    for kg in itertools.groupby(enumerate(i), lambda x: x[1] - x[0]):
+        g = list(kg[1])
+        yield g[0][1], g[-1][1]
 
 
 def rangess(i):
@@ -345,13 +343,13 @@ def reverse_callback():
     # 6-byte alphanumeric patches
     for i in permitted_characters:
         for j in permitted_characters:
-            bytes = [i, j]
-            patches = findReverse(desired, calc(bytes, accum))
-            for patch in patches:
-                if all(p in permitted_characters for p in patch):
-                    bytes.extend(patch)
+            patch = [i, j]
+            patches = findReverse(desired, calc(patch, accum))
+            for last_4_bytes in patches:
+                if all(p in permitted_characters for p in last_4_bytes):
+                    patch.extend(last_4_bytes)
                     out('alternative: {1}{2}{3}{4}{5}{6} ({0})'.format(
-                        'OK' if calc(bytes, accum) == desired else 'ERROR', *map(chr, bytes)))
+                        'OK' if calc(patch, accum) == desired else 'ERROR', *map(chr, patch)))
 
 
 def undo_callback():
