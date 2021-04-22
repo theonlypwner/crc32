@@ -341,18 +341,26 @@ def reverse_callback():
             text = '{}{}{}{} '.format(*map(chr, patch))
         out('4 bytes: {}{{0x{:02x}, 0x{:02x}, 0x{:02x}, 0x{:02x}}}'.format(text, *patch))
         checksum = calc(patch, accum)
-        out('verification checksum: 0x{0:08x} ({1})'.format(
+        out('verification checksum: 0x{:08x} ({})'.format(
             checksum, 'OK' if checksum == desired else 'ERROR'))
-    # 6-byte alphanumeric patches
-    for i in permitted_characters:
-        for j in permitted_characters:
-            patch = [i, j]
+
+    def print_permitted_reverse(patch):
             patches = findReverse(desired, calc(patch, accum))
             for last_4_bytes in patches:
                 if all(p in permitted_characters for p in last_4_bytes):
-                    patch.extend(last_4_bytes)
-                    out('alternative: {1}{2}{3}{4}{5}{6} ({0})'.format(
-                        'OK' if calc(patch, accum) == desired else 'ERROR', *map(chr, patch)))
+                    patch2 = patch + last_4_bytes
+                    out('{} bytes: {} ({})'.format(
+                        len(patch2),
+                        ''.join(map(chr, patch2)),
+                        'OK' if calc(patch2, accum) == desired else 'ERROR'))
+
+    # 5-byte alphanumeric patches
+    for i in permitted_characters:
+        print_permitted_reverse((i,))
+    # 6-byte alphanumeric patches
+    for i in permitted_characters:
+        for j in permitted_characters:
+            print_permitted_reverse((i, j))
 
 
 def undo_callback():
