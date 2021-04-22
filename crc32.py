@@ -336,7 +336,10 @@ def reverse_callback():
     # 4-byte patch
     patches = findReverse(desired, accum)
     for patch in patches:
-        out('4 bytes: {{0x{0:02x}, 0x{1:02x}, 0x{2:02x}, 0x{3:02x}}}'.format(*patch))
+        text = ''
+        if all(p in permitted_characters for p in patch):
+            text = '{}{}{}{} '.format(*map(chr, patch))
+        out('4 bytes: {}{{0x{:02x}, 0x{:02x}, 0x{:02x}, 0x{:02x}}}'.format(text, *patch))
         checksum = calc(patch, accum)
         out('verification checksum: 0x{0:08x} ({1})'.format(
             checksum, 'OK' if checksum == desired else 'ERROR'))
