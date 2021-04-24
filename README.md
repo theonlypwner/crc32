@@ -1,18 +1,19 @@
-CRC32 Tools
-===========
+# CRC32 Tools
+
 [![Build Status](https://travis-ci.org/theonlypwner/crc32.svg)](https://travis-ci.org/theonlypwner/crc32)
 [![Coverage Status](https://coveralls.io/repos/github/theonlypwner/crc32/badge.svg)](https://coveralls.io/github/theonlypwner/crc32)
 [![Code Health](https://landscape.io/github/theonlypwner/crc32/master/landscape.svg?style=flat)](https://landscape.io/github/theonlypwner/crc32/master)
 
-License
------------
+## License
+
 This project is licensed under the GPL v3 license.
 
-Usage
------------
+## Usage
+
 Run the command line to see usage instructions:
+
 ```
-crc32.py -h
+$ crc32.py -h
 usage: crc32.py [-h] action ...
 
 Reverse, undo, and calculate CRC32 checksums
@@ -33,3 +34,9 @@ positional arguments:
 optional arguments:
   -h, --help  show this help message and exit
 ```
+
+## References
+
+- Calculating Reverse CRC http://www.danielvik.com/2010/10/calculating-reverse-crc.html
+- Finding Reverse CRC Patch with Readable Characters http://www.danielvik.com/2012/01/finding-reverse-crc-patch-with-readable.html
+- Rewinding CRC - Calculating CRC backwards http://www.danielvik.com/2013/07/rewinding-crc-calculating-crc-backwards.html
