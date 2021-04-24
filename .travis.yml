@@ -22,6 +22,8 @@ jobs:
   - python: "3.9"
   - python: "pypy"
     allow_failure: true
+  - python: "pypy3"
+    allow_failure: true
 install: pip install coveralls
 script:
   - coverage run --branch --source=crc32 test.py
