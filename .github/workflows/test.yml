@@ -1,0 +1,58 @@
+name: Test Coverage
+
+on:
+  - push
+  - pull_request
+  - workflow_dispatch
+
+jobs:
+  test:
+    runs-on: ${{ matrix.platform || 'ubuntu-latest' }}
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      matrix:
+        include:
+          - python: "2.7"
+          - python: "3.2"
+            platform: windows-latest
+            experimental: true
+          - python: "3.3"
+            platform: windows-latest
+            experimental: true
+          - python: "3.5"
+            platform: windows-latest
+            experimental: true
+          - python: "3.6"
+          - python: "3.7"
+          - python: "3.8"
+          - python: "3.9"
+          - python: "3.10"
+          - python: "pypy2.7"
+          - python: "pypy3.6"
+          - python: "pypy3.7"
+          - python: "pypy3.8"
+          - python: "pypy3.9"
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install Coveralls
+      run: pip3 install coveralls
+    - name: Test
+      run: coverage run --branch --source=crc32 test.py
+    - name: Upload coverage data to coveralls.io
+      run: coveralls --service=github
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_FLAG_NAME: ${{ matrix.python }}
+        COVERALLS_PARALLEL: true
+
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - run: pip install --upgrade coveralls
+    - run: coveralls --service=github --finish
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
