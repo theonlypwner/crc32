@@ -1,8 +1,7 @@
 # CRC32 Tools
 
-[![Build Status](https://travis-ci.org/theonlypwner/crc32.svg)](https://travis-ci.org/theonlypwner/crc32)
+[![Build Status](https://github.com/theonlypwner/crc32/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/theonlypwner/crc32/actions/workflows/test.yml)
 [![Coverage Status](https://coveralls.io/repos/github/theonlypwner/crc32/badge.svg)](https://coveralls.io/github/theonlypwner/crc32)
-[![Code Health](https://landscape.io/github/theonlypwner/crc32/master/landscape.svg?style=flat)](https://landscape.io/github/theonlypwner/crc32/master)
 
 ## License
 
