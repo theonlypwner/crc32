@@ -1,4 +1,4 @@
-name: Test Coverage
+name: Test
 
 on:
   - push
@@ -10,6 +10,7 @@ jobs:
     runs-on: ${{ matrix.platform || 'ubuntu-latest' }}
     continue-on-error: ${{ matrix.experimental || false }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - python: "2.7"
@@ -41,7 +42,7 @@ jobs:
       run: pip3 install coveralls
     - name: Test
       run: coverage run --branch --source=crc32 test.py
-    - name: Upload coverage data to coveralls.io
+    - name: Upload coverage
       run: coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,6 +52,7 @@ jobs:
   finish:
     needs: test
     runs-on: ubuntu-latest
+    if: success() || failure()
     steps:
     - run: pip install --upgrade coveralls
     - run: coveralls --service=github --finish
