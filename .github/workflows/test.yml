@@ -7,32 +7,37 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.platform || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
+        python:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "pypy2.7"
+          - "pypy3.7"
+          - "pypy3.8"
+          - "pypy3.9"
         include:
-          - python: "2.7"
           - python: "3.2"
-            platform: windows-latest
-            experimental: true
+            os: windows-latest
           - python: "3.3"
-            platform: windows-latest
+            os: windows-latest
+          - python: "3.5"
+            os: ubuntu-20.04
             experimental: true
           - python: "3.5"
-            platform: windows-latest
-            experimental: true
+            os: windows-latest
           - python: "3.6"
-          - python: "3.7"
-          - python: "3.8"
-          - python: "3.9"
-          - python: "3.10"
-          - python: "pypy2.7"
+            os: ubuntu-20.04
+          - python: "3.6"
+            os: windows-latest
           - python: "pypy3.6"
-          - python: "pypy3.7"
-          - python: "pypy3.8"
-          - python: "pypy3.9"
+            os: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
