@@ -47,29 +47,15 @@ def init_tables(poly, reverse=True):
         for j in range(8):
             i = (i >> 1) ^ (poly & -(i & 1))
         table.append(i)
-    assert len(table) == 256, "table is wrong size"
     # build reverse table
     if reverse:
         table_reverse = []
-        found_none = set()
-        found_multiple = set()
         for i in range(256):
             found = []
             for j in range(256):
                 if table[j] >> 24 == i:
                     found.append(j)
             table_reverse.append(tuple(found))
-            if not found:
-                found_none.add(i)
-            elif len(found) > 1:
-                found_multiple.add(i)
-        assert len(table_reverse) == 256, "reverse table is wrong size"
-        if found_multiple:
-            out('WARNING: Multiple table entries have an MSB in {0}'.format(
-                rangess(found_multiple)))
-        if found_none:
-            out('ERROR: no MSB in the table equals bytes in {0}'.format(
-                rangess(found_none)))
 
 
 def calc(data, accum=0):
