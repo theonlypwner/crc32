@@ -197,7 +197,7 @@ def get_parser():
     ''' Return the command-line parser '''
     parser = argparse.ArgumentParser(
         description="Reverse, undo, and calculate CRC32 checksums")
-    subparsers = parser.add_subparsers(metavar='action')
+    subparsers = parser.add_subparsers(required=True, metavar='action')
 
     poly_flip_parser = argparse.ArgumentParser(add_help=False)
     subparser_group = poly_flip_parser.add_mutually_exclusive_group()
