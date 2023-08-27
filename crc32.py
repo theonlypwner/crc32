@@ -181,18 +181,6 @@ def get_parser():
     parser = argparse.ArgumentParser(
         description="Reverse, undo, and calculate CRC32 checksums")
 
-    poly_form_parser = argparse.ArgumentParser(add_help=False)
-    subparser_group = poly_form_parser.add_mutually_exclusive_group()
-    subparser_group.add_argument(
-        '-m', '--msbit', '--normal', dest='msb', action='store_true',
-        help='treat the polynomial as normal (msbit-first)')
-    subparser_group.add_argument(
-        '-l', '--lsbit', '--reversed', action='store_false',
-        help='treat the polynomial as reversed (lsbit-first) [default]')
-    poly_form_parser.add_argument(
-        '-r', '--reciprocal', action='store_true',
-        help='treat the polynomial as reciprocal (Koopman notation is reversed reciprocal)')
-
     desired_poly_parser = argparse.ArgumentParser(add_help=False)
     desired_poly_parser.add_argument(
         'desired', type=str, help='[int] desired checksum')
@@ -201,6 +189,16 @@ def get_parser():
     default_poly_parser.add_argument(
         'poly', default='0xEDB88320', type=str, nargs='?',
         help='[int] polynomial [default: 0xEDB88320]')
+    subparser_group = default_poly_parser.add_mutually_exclusive_group()
+    subparser_group.add_argument(
+        '-m', '--msbit', '--normal', dest='msb', action='store_true',
+        help='treat the polynomial as normal (msbit-first)')
+    subparser_group.add_argument(
+        '-l', '--lsbit', '--reversed', action='store_false',
+        help='treat the polynomial as reversed (lsbit-first) [default]')
+    default_poly_parser.add_argument(
+        '-r', '--reciprocal', action='store_true',
+        help='treat the polynomial as reciprocal (Koopman notation is reversed reciprocal)')
 
     accum_parser = argparse.ArgumentParser(add_help=False)
     accum_parser.add_argument(
@@ -238,20 +236,19 @@ def get_parser():
     subparsers = parser.add_subparsers(required=True, metavar='action')
     subparser = subparsers.add_parser(
         'poly', aliases=['p'],
-        parents=[outfile_parser, poly_form_parser, default_poly_parser],
+        parents=[outfile_parser, default_poly_parser],
         help="print the polynomial, useful for converting between forms")
     subparser.set_defaults(func=poly_callback)
 
     subparser = subparsers.add_parser(
         'table', aliases=['t'],
-        parents=[outfile_parser, poly_form_parser, default_poly_parser],
+        parents=[outfile_parser, default_poly_parser],
         help="generate a lookup table for a polynomial")
     subparser.set_defaults(func=table_callback)
 
     subparser = subparsers.add_parser(
         'reverse', aliases=['r'], parents=[
             outfile_parser,
-            poly_form_parser,
             desired_poly_parser,
             default_accum_parser,
             default_poly_parser],
@@ -262,7 +259,6 @@ def get_parser():
         'undo', aliases=['u'],
         parents=[
             outfile_parser,
-            poly_form_parser,
             accum_parser,
             default_poly_parser,
             infile_parser],
@@ -276,8 +272,7 @@ def get_parser():
     subparser = subparsers.add_parser(
         'calc', aliases=['c'],
         parents=[
-        outfile_parser,
-            poly_form_parser,
+            outfile_parser,
             default_accum_parser,
             default_poly_parser,
             infile_parser],
