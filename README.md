@@ -2,6 +2,7 @@
 
 [![Build Status](https://github.com/theonlypwner/crc32/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/theonlypwner/crc32/actions/workflows/test.yml)
 [![Coverage Status](https://coveralls.io/repos/github/theonlypwner/crc32/badge.svg)](https://coveralls.io/github/theonlypwner/crc32)
+[![PyPI](https://img.shields.io/pypi/v/crc32.svg)](https://pypi.org/project/crc32/)
 
 ## License
 
