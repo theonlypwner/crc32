@@ -45,11 +45,7 @@ def init_tables(poly, reverse=True):
     # build CRC32 table
     for i in range(256):
         for j in range(8):
-            if i & 1:
-                i >>= 1
-                i ^= poly
-            else:
-                i >>= 1
+            i = (i >> 1) ^ (poly & -(i & 1))
         table.append(i)
     assert len(table) == 256, "table is wrong size"
     # build reverse table
