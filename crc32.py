@@ -17,6 +17,8 @@ def get_poly():
     poly = parse_dword(args.poly)
     if args.msb:
         poly = reverseBits(poly)
+    if args.reciprocal:
+        poly = reverseBits(reciprocal(poly))
     check32(poly)
     return poly
 
@@ -137,41 +139,22 @@ def reverseBits(x):
     x = ((x & 0x0000FFFF) << 16) | ((x & 0xFFFF0000) >> 16)
     return x & 0xFFFFFFFF
 
-# Compatibility with Python 2.6 and earlier.
-if hasattr(int, "bit_length"):
-    def bit_length(num):
-        return num.bit_length()
-else:
-    def bit_length(n):
-        if n == 0:
-            return 0
-        bits = -32
-        m = 0
-        while n:
-            m = n
-            n >>= 32
-            bits += 32
-        while m:
-            m >>= 1
-            bits += 1
-        return bits
-
 
 def check32(poly):
     if poly & 0x80000000 == 0:
-        out('WARNING: polynomial degree ({0}) != 32'.format(bit_length(poly)))
+        suggested = poly | 0x80000000
+        out('WARNING: polynomial degree ({0}) != 32'.format(poly.bit_length()))
         out('         instead, try')
-        out('         0x{0:08x} (reversed/lsbit-first)'.format(poly | 0x80000000))
-        out('         0x{0:08x} (normal/msbit-first)'.format(reverseBits(poly | 0x80000000)))
+        out('         0x{0:08x} (reversed/lsbit-first)'.format(suggested))
+        out('         0x{0:08x} (normal/msbit-first)'.format(reverseBits(suggested)))
 
 
 def reciprocal(poly):
-    ''' Return the reversed reciprocal (Koopman notatation) polynomial of a
-        reversed (lsbit-first) polynomial '''
-    return reverseBits((poly << 1) | 1)
+    ''' Return the reciprocal polynomial of a reversed (lsbit-first) polynomial. '''
+    return poly << 1 & 0xffffffff | 1
 
 
-def print_num(num):
+def out_num(num):
     ''' Write a numeric result in various forms '''
     out('hex: 0x{0:08x}'.format(num))
     out('dec:   {0:d}'.format(num))
@@ -197,15 +180,18 @@ def get_parser():
     ''' Return the command-line parser '''
     parser = argparse.ArgumentParser(
         description="Reverse, undo, and calculate CRC32 checksums")
-    subparsers = parser.add_subparsers(required=True, metavar='action')
 
-    poly_flip_parser = argparse.ArgumentParser(add_help=False)
-    subparser_group = poly_flip_parser.add_mutually_exclusive_group()
+    poly_form_parser = argparse.ArgumentParser(add_help=False)
+    subparser_group = poly_form_parser.add_mutually_exclusive_group()
     subparser_group.add_argument(
-        '-m', '--msbit', dest="msb", action='store_true',
+        '-m', '--msbit', '--normal', dest='msb', action='store_true',
         help='treat the polynomial as normal (msbit-first)')
-    subparser_group.add_argument('-l', '--lsbit', action='store_false',
-                                 help='treat the polynomial as reversed (lsbit-first) [default]')
+    subparser_group.add_argument(
+        '-l', '--lsbit', '--reversed', action='store_false',
+        help='treat the polynomial as reversed (lsbit-first) [default]')
+    poly_form_parser.add_argument(
+        '-r', '--reciprocal', action='store_true',
+        help='treat the polynomial as reciprocal (Koopman notation is reversed reciprocal)')
 
     desired_poly_parser = argparse.ArgumentParser(add_help=False)
     desired_poly_parser.add_argument(
@@ -226,79 +212,92 @@ def get_parser():
         help='[int] starting accumulator [default: 0]')
 
     outfile_parser = argparse.ArgumentParser(add_help=False)
-    outfile_parser.add_argument('-o', '--outfile',
-                                metavar="f",
-                                type=argparse.FileType('w'),
-                                default=sys.stdout,
-                                help="Output to a file instead of stdout")
+    outfile_parser.add_argument(
+        '-o', '--outfile',
+        metavar="f",
+        type=argparse.FileType('w'),
+        default=sys.stdout,
+        help="Output to a file instead of stdout")
 
     infile_parser = argparse.ArgumentParser(add_help=False)
     subparser_group = infile_parser.add_mutually_exclusive_group()
-    subparser_group.add_argument('-i', '--infile',
-                                 metavar="f",
-                                 type=argparse.FileType('rb'),
-                                 default=sys.stdin,
-                                 help="Input from a file instead of stdin")
-    subparser_group.add_argument('-s', '--str',
-                                 metavar="s",
-                                 type=str,
-                                 default='',
-                                 dest='instr',
-                                 help="Use a string as input")
+    subparser_group.add_argument(
+        '-i', '--infile',
+        metavar="f",
+        type=argparse.FileType('rb'),
+        default=sys.stdin,
+        help="Input from a file instead of stdin")
+    subparser_group.add_argument(
+        '-s', '--str',
+        metavar="s",
+        type=str,
+        default='',
+        dest='instr',
+        help="Use a string as input")
 
-    subparser = subparsers.add_parser('flip', parents=[outfile_parser],
-                                      help="flip the bits to convert normal(msbit-first) polynomials to reversed (lsbit-first) and vice versa")
-    subparser.add_argument('poly', type=str, help='[int] polynomial')
-    subparser.set_defaults(
-        func=lambda: print_num(reverseBits(parse_dword(args.poly))))
+    subparsers = parser.add_subparsers(required=True, metavar='action')
+    subparser = subparsers.add_parser(
+        'poly', aliases=['p'],
+        parents=[outfile_parser, poly_form_parser, default_poly_parser],
+        help="print the polynomial, useful for converting between forms")
+    subparser.set_defaults(func=poly_callback)
 
-    subparser = subparsers.add_parser('reciprocal', parents=[outfile_parser],
-                                      help="find the reciprocal (Koopman notation) of a reversed (lsbit-first) polynomial and vice versa")
-    subparser.add_argument('poly', type=str, help='[int] polynomial')
-    subparser.set_defaults(func=reciprocal_callback)
-
-    subparser = subparsers.add_parser('table', parents=[outfile_parser,
-                                                        poly_flip_parser,
-                                                        default_poly_parser],
-                                      help="generate a lookup table for a polynomial")
+    subparser = subparsers.add_parser(
+        'table', aliases=['t'],
+        parents=[outfile_parser, poly_form_parser, default_poly_parser],
+        help="generate a lookup table for a polynomial")
     subparser.set_defaults(func=table_callback)
 
-    subparser = subparsers.add_parser('reverse', parents=[
-        outfile_parser,
-        poly_flip_parser,
-        desired_poly_parser,
-        default_accum_parser,
-        default_poly_parser],
+    subparser = subparsers.add_parser(
+        'reverse', aliases=['r'], parents=[
+            outfile_parser,
+            poly_form_parser,
+            desired_poly_parser,
+            default_accum_parser,
+            default_poly_parser],
         help="find a patch that causes the CRC32 checksum to become a desired value")
     subparser.set_defaults(func=reverse_callback)
 
-    subparser = subparsers.add_parser('undo', parents=[
-        outfile_parser,
-        poly_flip_parser,
-        accum_parser,
-        default_poly_parser,
-        infile_parser],
+    subparser = subparsers.add_parser(
+        'undo', aliases=['u'],
+        parents=[
+            outfile_parser,
+            poly_form_parser,
+            accum_parser,
+            default_poly_parser,
+            infile_parser],
         help="rewind a CRC32 checksum")
-    subparser.add_argument('-n', '--len', metavar='l', type=str,
-                           default='0', help='[int] number of bytes to rewind [default: 0]')
+    subparser.add_argument(
+        '-n', '--len', metavar='l',
+        type=str,
+        default='0', help='[int] number of bytes to rewind [default: 0]')
     subparser.set_defaults(func=undo_callback)
 
-    subparser = subparsers.add_parser('calc', parents=[
+    subparser = subparsers.add_parser(
+        'calc', aliases=['c'],
+        parents=[
         outfile_parser,
-        poly_flip_parser,
-        default_accum_parser,
-        default_poly_parser,
-        infile_parser],
+            poly_form_parser,
+            default_accum_parser,
+            default_poly_parser,
+            infile_parser],
         help="calculate the CRC32 checksum")
     subparser.set_defaults(func=calc_callback)
 
     return parser
 
 
-def reciprocal_callback():
-    poly = parse_dword(args.poly)
-    check32(poly)
-    print_num(reciprocal(poly))
+def poly_callback():
+    poly = get_poly()
+    out('Reversed (lsbit-first)')
+    out_num(poly)
+    out('Normal (msbit-first)')
+    out_num(reverseBits(poly))
+    r = reciprocal(poly)
+    out('Reversed reciprocal (Koopman notation)')
+    out_num(reverseBits(r))
+    out('Reciprocal')
+    out_num(r)
 
 
 def table_callback():
@@ -357,7 +356,7 @@ def undo_callback():
         maxlen * 100.0 / len(data) if len(data) else 100))
     for solution in rewind(accum, data[-maxlen:]):
         out('')
-        print_num(solution)
+        out_num(solution)
 
 
 def calc_callback():
@@ -368,7 +367,7 @@ def calc_callback():
     data = get_input()
     out('data len: {0}'.format(len(data)))
     out('')
-    print_num(calc(data, accum))
+    out_num(calc(data, accum))
 
 
 def main(argv=None):

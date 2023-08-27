@@ -2,8 +2,8 @@
 # Data tables for unit tests
 
 commandline = [
-    ['flip', '0x1337'],
-    ['reciprocal', '0x1337'],
+    ['poly', '-m', '0x1337'],
+    ['poly', '-r', '0x1337'],
     ['table'],
     ['table', '0'],
     ['reverse', '0x13371337'],

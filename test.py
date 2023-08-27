@@ -27,8 +27,8 @@ class ParserFunctions(unittest.TestCase):
 
     def test_reciprocal(self):
         for k in test_data.reciprocal:
-            self.assertEqual(crc32.reciprocal(k), test_data.reciprocal[k])
-            self.assertEqual(crc32.reciprocal(test_data.reciprocal[k]), k)
+            self.assertEqual(crc32.reverseBits(crc32.reciprocal(k)), test_data.reciprocal[k])
+            self.assertEqual(crc32.reverseBits(crc32.reciprocal(test_data.reciprocal[k])), k)
 
     def test_table(self):
         old_table = crc32.table  # save table
