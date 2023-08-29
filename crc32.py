@@ -104,6 +104,87 @@ def findReverse(desired, accum):
                 stack.append(((node[0] ^ table[j]) << 8,) + node[1:] + (j,))
     return solutions
 
+
+class Matrix:
+    def __init__(self, matrix):
+        # column vectors
+        self.matrix = matrix
+
+    @staticmethod
+    def identity():
+        return Matrix(tuple(1 << i for i in range(32)))
+
+    @staticmethod
+    def zero_operator(poly):
+        m = [poly]
+        n = 1
+        for _ in range(31):
+            m.append(n)
+            n <<= 1
+        return Matrix(tuple(m))
+
+    def multiply_vector(self, v, s = 0):
+        for c in self.matrix:
+            s ^= c & -(v & 1)
+            v >>= 1
+            if not v:
+                break
+        return s
+
+    def mul(self, matrix):
+        return Matrix(tuple(map(self.multiply_vector, matrix.matrix)))
+
+def combine(c1, c2, l2, n, poly):
+    # The effect of feeding zero bits into the CRC32 state machine can be
+    # represented by matrix multiplication, allowing exponentiation-by-squaring.
+    #
+    # https://github.com/madler/zlib/blob/v1.2.11/crc32.c#L341-L434
+    # https://stackoverflow.com/a/23126768
+    #
+    # Let C(a) be pure CRC32, and let Z be 32 bits such that
+    # C(Z) = 0xffffffff and CRC32(A) = ~C(ZA).
+    #
+    # Let a be A replaced with zero bits but have the same length as A.
+    #
+    # CRC32(AB) = ~C(ZAB) = ~(C(ZAb ^ aZb ^ aZB)) = ~(C(ZAb) ^ C(aZb) ^ C(aZB))
+    #   = ~C(ZAb) ^ ~C(Zb) ^ ~C(ZB)
+    #   = ~(~C(ZAb) ^ C(Zb)) ^ CRC32(B)
+    #
+    # The first term is ~CRC32(Ab), except the CRC register is negated
+    # after A before B.
+
+    m = Matrix.zero_operator(poly)
+    m = m.mul(m)
+    m = m.mul(m)
+
+    M = Matrix.identity()
+    while l2:
+        m = m.mul(m)
+        if l2 & 1:
+            M = m.mul(M)
+        l2 >>= 1
+
+    # M is now the matrix that represents appending l2 zero bytes.
+    #
+    # The effect of matrix multiplication and adding is an affine transform,
+    # and homogeneous coordinates allows exponentiation-by-squaring.
+    #
+    # https://stackoverflow.com/a/59239761
+
+    b = c2
+    while True:
+        if n & 1:
+            c1 = M.multiply_vector(c1, b)
+
+        n >>= 1
+        if not n:
+            break
+
+        b = M.multiply_vector(b, b)
+        M = M.mul(M)
+
+    return c1
+
 # Tools
 
 
@@ -191,6 +272,19 @@ def get_parser():
         'accum', default='0', type=str, nargs='?',
         help='[int] starting accumulator [default: 0]')
 
+    combine_parser = argparse.ArgumentParser(add_help=False)
+    combine_parser.add_argument(
+        'accum', type=str, help='[int] accumulator (initial checksum)')
+    combine_parser.add_argument(
+        'checksum', type=str,
+        help='[int] checksum of message')
+    combine_parser.add_argument(
+        'len', type=str,
+        help='[int] length of message')
+    combine_parser.add_argument(
+        'n', default='1', type=str, nargs='?',
+        help='[int] number of times to append message [default: 1]')
+
     outfile_parser = argparse.ArgumentParser(add_help=False)
     outfile_parser.add_argument(
         '-o', '--outfile',
@@ -260,6 +354,15 @@ def get_parser():
             infile_parser],
         help="calculate the CRC32 checksum")
     subparser.set_defaults(func=calc_callback)
+
+    subparser = subparsers.add_parser(
+        'combine',
+        parents=[
+            outfile_parser,
+            combine_parser,
+            default_poly_parser],
+        help="combine CRC32 checksums")
+    subparser.set_defaults(func=combine_callback)
 
     return parser
 
@@ -345,6 +448,15 @@ def calc_callback():
     out('data len: {0}'.format(len(data)))
     out('')
     out_num(calc(data, accum))
+
+
+def combine_callback():
+    c1 = parse_dword(args.accum)
+    c2 = parse_dword(args.checksum)
+    l2 = parse_dword(args.len)
+    n = int(args.n, 0)
+
+    out_num(combine(c1, c2, l2, n, get_poly()))
 
 
 def main(argv=None):
