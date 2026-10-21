@@ -20,16 +20,138 @@ Reverse, undo, and calculate CRC32 checksums
 
 positional arguments:
   action
-    poly (p)   print the polynomial, useful for converting between forms
-    table (t)  generate a lookup table for a polynomial
-    reverse (r)
-               find a patch that causes the CRC32 checksum to become a desired value
-    undo (u)   rewind a CRC32 checksum
-    calc (c)   calculate the CRC32 checksum
-    combine    combine CRC32 checksums
+    poly (p)     print the polynomial, useful for converting between forms
+    table (t)    generate a lookup table for a polynomial
+    reverse (r)  find a patch that causes the CRC32 checksum to become a desired value
+    undo (u)     rewind a CRC32 checksum
+    calc (c)     calculate the CRC32 checksum
+    combine      combine CRC32 checksums
 
 options:
-  -h, --help   show this help message and exit
+  -h, --help     show this help message and exit
+
+$ crc32.py poly -h
+usage: crc32.py poly [-h] [-o f] [-m | -l] [-r] [poly]
+
+positional arguments:
+  poly                  [int] polynomial [default: 0xEDB88320]
+
+options:
+  -h, --help            show this help message and exit
+  -o, --outfile f       Output to a file instead of stdout
+  -m, --msbit, --normal
+                        treat the polynomial as normal (msbit-first)
+  -l, --lsbit, --reversed
+                        treat the polynomial as reversed (lsbit-first)
+                        [default]
+  -r, --reciprocal      treat the polynomial as reciprocal (Koopman notation
+                        is reversed reciprocal)
+
+$ crc32.py table -h
+usage: crc32.py table [-h] [-o f] [-m | -l] [-r] [poly]
+
+positional arguments:
+  poly                  [int] polynomial [default: 0xEDB88320]
+
+options:
+  -h, --help            show this help message and exit
+  -o, --outfile f       Output to a file instead of stdout
+  -m, --msbit, --normal
+                        treat the polynomial as normal (msbit-first)
+  -l, --lsbit, --reversed
+                        treat the polynomial as reversed (lsbit-first)
+                        [default]
+  -r, --reciprocal      treat the polynomial as reciprocal (Koopman notation
+                        is reversed reciprocal)
+
+$ crc32.py reverse -h
+usage: crc32.py reverse [-h] [-o f] [-m | -l] [-r] desired [accum] [poly]
+
+positional arguments:
+  desired               [int] desired checksum
+  accum                 [int] starting accumulator [default: 0]
+  poly                  [int] polynomial [default: 0xEDB88320]
+
+options:
+  -h, --help            show this help message and exit
+  -o, --outfile f       Output to a file instead of stdout
+  -m, --msbit, --normal
+                        treat the polynomial as normal (msbit-first)
+  -l, --lsbit, --reversed
+                        treat the polynomial as reversed (lsbit-first)
+                        [default]
+  -r, --reciprocal      treat the polynomial as reciprocal (Koopman notation
+                        is reversed reciprocal)
+
+$ crc32.py undo -h
+usage: crc32.py undo [-h] [-o f] [-m | -l] [-r] [-O OFFSET] [-i f | -s s]
+                     [-n l]
+                     accum [poly]
+
+positional arguments:
+  accum                 [int] accumulator (final checksum)
+  poly                  [int] polynomial [default: 0xEDB88320]
+
+options:
+  -h, --help            show this help message and exit
+  -o, --outfile f       Output to a file instead of stdout
+  -m, --msbit, --normal
+                        treat the polynomial as normal (msbit-first)
+  -l, --lsbit, --reversed
+                        treat the polynomial as reversed (lsbit-first)
+                        [default]
+  -r, --reciprocal      treat the polynomial as reciprocal (Koopman notation
+                        is reversed reciprocal)
+  -O, --offset OFFSET   Offset (in bytes) to start reading from input file
+                        [default: 0]
+  -i, --infile f        Input from a file instead of stdin
+  -s, --str s           Use a string as input
+  -n, --len l           [int] number of bytes to rewind [default: 0]
+
+$ crc32.py calc -h
+usage: crc32.py calc [-h] [-o f] [-m | -l] [-r] [-O OFFSET] [-i f | -s s]
+                     [accum] [poly]
+
+positional arguments:
+  accum                 [int] starting accumulator [default: 0]
+  poly                  [int] polynomial [default: 0xEDB88320]
+
+options:
+  -h, --help            show this help message and exit
+  -o, --outfile f       Output to a file instead of stdout
+  -m, --msbit, --normal
+                        treat the polynomial as normal (msbit-first)
+  -l, --lsbit, --reversed
+                        treat the polynomial as reversed (lsbit-first)
+                        [default]
+  -r, --reciprocal      treat the polynomial as reciprocal (Koopman notation
+                        is reversed reciprocal)
+  -O, --offset OFFSET   Offset (in bytes) to start reading from input file
+                        [default: 0]
+  -i, --infile f        Input from a file instead of stdin
+  -s, --str s           Use a string as input
+
+$ crc32.py combine -h
+usage: crc32.py combine [-h] [-o f] [-m | -l] [-r]
+                        accum checksum len [n] [poly]
+
+positional arguments:
+  accum                 [int] accumulator (initial checksum)
+  checksum              [int] checksum of message
+  len                   [int] length of message
+  n                     [int] number of times to append message [default: 1]
+  poly                  [int] polynomial [default: 0xEDB88320]
+
+options:
+  -h, --help            show this help message and exit
+  -o, --outfile f       Output to a file instead of stdout
+  -m, --msbit, --normal
+                        treat the polynomial as normal (msbit-first)
+  -l, --lsbit, --reversed
+                        treat the polynomial as reversed (lsbit-first)
+                        [default]
+  -r, --reciprocal      treat the polynomial as reciprocal (Koopman notation
+                        is reversed reciprocal)
 ```
 
 ## References
