@@ -26,7 +26,7 @@ def get_input(args):
     if args.instr:
         return args.instr.encode('utf-8')
     with args.infile as f:
-        if hasattr(args, 'offset') and args.offset > 0:
+        if args.offset:
             f.seek(args.offset)
         return f.read()
 
@@ -99,6 +99,12 @@ def get_parser():
         help="Output to a file instead of stdout")
 
     infile_parser = argparse.ArgumentParser(add_help=False)
+    infile_parser.add_argument(
+        '-O', '--offset',
+        type=int,
+        default=0,
+        help='Offset (in bytes) to start reading from input file [default: 0]')
+
     subparser_group = infile_parser.add_mutually_exclusive_group()
     subparser_group.add_argument(
         '-i', '--infile',
@@ -113,11 +119,6 @@ def get_parser():
         default='',
         dest='instr',
         help="Use a string as input")
-    infile_parser.add_argument(
-        '--offset', '-O',
-        type=int,
-        default=0,
-        help='Offset (in bytes) to start reading from input file [default: 0]')
 
     subparsers = parser.add_subparsers(required=True, metavar='action')
     subparser = subparsers.add_parser(
